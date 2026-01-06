@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Translator</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .result-container {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 200px;
+            border: 2px dashed #475569;
+            overflow: auto;
+        }
+
+        #result-image {
+            max-width: 100%;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .placeholder-text {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Vision Translator</h1>
+            <p class="subtitle">画面の領域を選択して翻訳し、画像を置き換えます</p>
+        </header>
+
+        <div class="controls">
+            <button id="capture-btn">
+                <div class="loading-spinner"></div>
+                <span class="btn-text">📸 領域を選択して翻訳</span>
+            </button>
+        </div>
+
+        <div id="status" class="status">処理中...</div>
+
+        <div class="result-container">
+            <img id="result-image" src="" alt="Translated result">
+            <div id="placeholder" class="placeholder-text">キャプチャした画像がここに表示されます</div>
+        </div>
+    </div>
+
+    <script>
+        const captureBtn = document.getElementById('capture-btn');
+        const resultImage = document.getElementById('result-image');
+        const placeholder = document.getElementById('placeholder');
+        const statusEl = document.getElementById('status');
+
+        function setStatus(text, duration = 3000) {
+            statusEl.textContent = text;
+            statusEl.classList.add('visible');
+            if (duration > 0) {
+                setTimeout(() => {
+                    statusEl.classList.remove('visible');
+                }, duration);
+            }
+        }
+
+        captureBtn.addEventListener('click', async () => {
+            captureBtn.classList.add('loading');
+            setStatus('領域を選択してください...', 0);
+
+            // Hide previous result
+            resultImage.style.display = 'none';
+            placeholder.style.display = 'block';
+
+            try {
+                // Call Python backend
+                const result = await pywebview.api.capture_and_translate();
+
+                if (result.error) {
+                    setStatus('エラー: ' + result.error);
+                } else if (result.image) {
+                    resultImage.src = result.image;
+                    resultImage.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    setStatus('完了しました');
+                }
+            } catch (err) {
+                setStatus('エラーが発生しました');
+                console.error(err);
+            } finally {
+                captureBtn.classList.remove('loading');
+            }
+        });
+    </script>
+</body>
+
+</html>
